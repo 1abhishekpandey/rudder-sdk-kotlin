@@ -140,6 +140,7 @@ class BrazeIntegration : StandardIntegration, IntegrationPlugin(), ActivityLifec
                         productId = it.productId,
                         currencyCode = currency,
                         price = it.price,
+                        quantity = it.quantity,
                         properties = initBrazeProperties(customProperties),
                     )
                     LoggerAnalytics.verbose(
@@ -194,7 +195,7 @@ private fun initBraze(application: Application, config: RudderBrazeConfig, logLe
     with(config) {
         val builder: BrazeConfig.Builder =
             initBrazeConfig()
-                .setApiKey(resolvedApiKey)
+                .setApiKey(resolvedAppIdentifierKey)
                 .setCustomEndpoint(customEndpoint)
         setLogLevel(logLevel)
         Braze.configure(application, builder.build())
