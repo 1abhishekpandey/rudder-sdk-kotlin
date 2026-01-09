@@ -26,7 +26,7 @@ internal sealed interface EventUploadError : EventUploadResult {
 }
 
 /**
- * `RetryAbleError` is an sealed class representing the different types of retry able event upload errors.
+ * `RetryAbleError` is a sealed class representing the different types of retry able event upload errors.
  *
  * @property statusCode The HTTP status code associated with the error, if available.
  */
