@@ -28,7 +28,7 @@ internal class EventUploadResultTest {
     @MethodSource("retryAbleErrorMappings")
     fun `given retry able network error, when converted, then returns corresponding retry able error`(
         networkError: NetworkErrorStatus,
-        expectedError: RetryAbleEventUploadError
+        expectedError: RetryAbleError
     ) {
         val networkResult = Result.Failure(networkError) as NetworkResult
 
@@ -41,7 +41,7 @@ internal class EventUploadResultTest {
     @MethodSource("nonRetryAbleErrorMappings")
     fun `given non-retry able network error, when converted, then returns corresponding non-retry able error`(
         networkError: NetworkErrorStatus,
-        expectedError: NonRetryAbleEventUploadError
+        expectedError: NonRetryAbleError
     ) {
         val networkResult = Result.Failure(networkError) as NetworkResult
 
@@ -64,7 +64,7 @@ internal class EventUploadResultTest {
     @ParameterizedTest
     @MethodSource("getListOfRetryAbleErrors")
     fun `when retry able error is provided, then it returns null status code`(
-        retryAbleError: RetryAbleEventUploadError
+        retryAbleError: RetryAbleError
     ) {
         val statusCode = retryAbleError.statusCode
 
@@ -78,8 +78,8 @@ internal class EventUploadResultTest {
 
         val eventUploadResult = networkResult.toEventUploadResult()
 
-        assertTrue(eventUploadResult is RetryAbleEventUploadError)
-        val actualStatusCode = (eventUploadResult as RetryAbleEventUploadError).statusCode
+        assertTrue(eventUploadResult is RetryAbleError)
+        val actualStatusCode = (eventUploadResult as RetryAbleError).statusCode
         assertEquals(errorCode, actualStatusCode)
     }
 
@@ -87,32 +87,32 @@ internal class EventUploadResultTest {
 
         @JvmStatic
         fun retryAbleErrorMappings(): Stream<Arguments> = Stream.of(
-            Arguments.of(NetworkErrorStatus.ErrorRetry(), RetryAbleEventUploadError.ErrorRetry()),
-            Arguments.of(NetworkErrorStatus.ErrorNetworkUnavailable, RetryAbleEventUploadError.ErrorNetworkUnavailable),
-            Arguments.of(NetworkErrorStatus.ErrorUnknown, RetryAbleEventUploadError.ErrorUnknown)
+            Arguments.of(NetworkErrorStatus.ErrorRetry(), RetryAbleError.ErrorRetry()),
+            Arguments.of(NetworkErrorStatus.ErrorNetworkUnavailable, RetryAbleError.ErrorNetworkUnavailable),
+            Arguments.of(NetworkErrorStatus.ErrorUnknown, RetryAbleError.ErrorUnknown)
         )
 
         @JvmStatic
         fun nonRetryAbleErrorMappings(): Stream<Arguments> = Stream.of(
-            Arguments.of(NetworkErrorStatus.Error400, NonRetryAbleEventUploadError.ERROR_400),
-            Arguments.of(NetworkErrorStatus.Error401, NonRetryAbleEventUploadError.ERROR_401),
-            Arguments.of(NetworkErrorStatus.Error404, NonRetryAbleEventUploadError.ERROR_404),
-            Arguments.of(NetworkErrorStatus.Error413, NonRetryAbleEventUploadError.ERROR_413)
+            Arguments.of(NetworkErrorStatus.Error400, NonRetryAbleError.ERROR_400),
+            Arguments.of(NetworkErrorStatus.Error401, NonRetryAbleError.ERROR_401),
+            Arguments.of(NetworkErrorStatus.Error404, NonRetryAbleError.ERROR_404),
+            Arguments.of(NetworkErrorStatus.Error413, NonRetryAbleError.ERROR_413)
         )
 
         @JvmStatic
         fun nonRetryAbleErrorToStatusCodeMappings(): Stream<Arguments> = Stream.of(
-            Arguments.of(NonRetryAbleEventUploadError.ERROR_400, 400),
-            Arguments.of(NonRetryAbleEventUploadError.ERROR_401, 401),
-            Arguments.of(NonRetryAbleEventUploadError.ERROR_404, 404),
-            Arguments.of(NonRetryAbleEventUploadError.ERROR_413, 413),
+            Arguments.of(NonRetryAbleError.ERROR_400, 400),
+            Arguments.of(NonRetryAbleError.ERROR_401, 401),
+            Arguments.of(NonRetryAbleError.ERROR_404, 404),
+            Arguments.of(NonRetryAbleError.ERROR_413, 413),
         )
 
         @JvmStatic
         fun getListOfRetryAbleErrors(): Stream<Arguments> = Stream.of(
-            Arguments.of(RetryAbleEventUploadError.ErrorRetry()),
-            Arguments.of(RetryAbleEventUploadError.ErrorNetworkUnavailable),
-            Arguments.of(RetryAbleEventUploadError.ErrorUnknown)
+            Arguments.of(RetryAbleError.ErrorRetry()),
+            Arguments.of(RetryAbleError.ErrorNetworkUnavailable),
+            Arguments.of(RetryAbleError.ErrorUnknown)
         )
     }
 }
