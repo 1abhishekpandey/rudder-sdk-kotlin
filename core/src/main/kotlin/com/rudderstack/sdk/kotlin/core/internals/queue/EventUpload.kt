@@ -5,8 +5,8 @@ import com.rudderstack.sdk.kotlin.core.internals.logger.LoggerAnalytics
 import com.rudderstack.sdk.kotlin.core.internals.network.EventUploadResult
 import com.rudderstack.sdk.kotlin.core.internals.network.HttpClient
 import com.rudderstack.sdk.kotlin.core.internals.network.HttpClientImpl
-import com.rudderstack.sdk.kotlin.core.internals.network.NonRetryAbleError
-import com.rudderstack.sdk.kotlin.core.internals.network.RetryAbleError
+import com.rudderstack.sdk.kotlin.core.internals.network.NonRetryAbleEventUploadError
+import com.rudderstack.sdk.kotlin.core.internals.network.RetryAbleEventUploadError
 import com.rudderstack.sdk.kotlin.core.internals.network.Success
 import com.rudderstack.sdk.kotlin.core.internals.network.formatStatusCodeMessage
 import com.rudderstack.sdk.kotlin.core.internals.network.toEventUploadResult
@@ -139,23 +139,23 @@ internal class EventUpload(
                     cleanup(filePath)
                 }
 
-                is RetryAbleError -> {
+                is RetryAbleEventUploadError -> {
                     LoggerAnalytics.debug("EventUpload: ${result.formatStatusCodeMessage()}. Retry able error occurred.")
                     maxAttemptsWithBackoff.delayWithBackoff()
                 }
 
-                is NonRetryAbleError -> {
+                is NonRetryAbleEventUploadError -> {
                     maxAttemptsWithBackoff.reset()
                     handleNonRetryAbleError(result, filePath)
                 }
             }
-        } while (result is RetryAbleError)
+        } while (result is RetryAbleEventUploadError)
     }
 
     @OptIn(UseWithCaution::class)
-    private fun handleNonRetryAbleError(status: NonRetryAbleError, filePath: String) {
+    private fun handleNonRetryAbleError(status: NonRetryAbleEventUploadError, filePath: String) {
         when (status) {
-            NonRetryAbleError.ERROR_400 -> {
+            NonRetryAbleEventUploadError.ERROR_400 -> {
                 LoggerAnalytics.error(
                     "EventUpload: ${status.formatStatusCodeMessage()}. Invalid request: Missing or malformed body. " +
                         "Ensure the payload is a valid JSON and includes either 'anonymousId' or 'userId' properties."
@@ -163,7 +163,7 @@ internal class EventUpload(
                 cleanup(filePath)
             }
 
-            NonRetryAbleError.ERROR_401 -> {
+            NonRetryAbleEventUploadError.ERROR_401 -> {
                 LoggerAnalytics.error(
                     "EventUpload: ${status.formatStatusCodeMessage()}. " +
                         "Invalid write key. Ensure the write key is valid."
@@ -172,7 +172,7 @@ internal class EventUpload(
                 analytics.handleInvalidWriteKey()
             }
 
-            NonRetryAbleError.ERROR_404 -> {
+            NonRetryAbleEventUploadError.ERROR_404 -> {
                 LoggerAnalytics.error(
                     "EventUpload: ${status.formatStatusCodeMessage()}. Source is disabled. " +
                         "Stopping the events upload process until the source is enabled again."
@@ -181,7 +181,7 @@ internal class EventUpload(
                 analytics.disableSource()
             }
 
-            NonRetryAbleError.ERROR_413 -> {
+            NonRetryAbleEventUploadError.ERROR_413 -> {
                 LoggerAnalytics.error(
                     "EventUpload: ${status.formatStatusCodeMessage()}. " +
                         "Request failed: Payload size exceeds the maximum allowed limit."

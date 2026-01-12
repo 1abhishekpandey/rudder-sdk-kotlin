@@ -26,37 +26,37 @@ internal sealed interface EventUploadError : EventUploadResult {
 }
 
 /**
- * `RetryAbleError` is a sealed class representing the different types of retry able event upload errors.
+ * `RetryAbleEventUploadError` is a sealed class representing the different types of retry able event upload errors.
  *
  * @property statusCode The HTTP status code associated with the error, if available.
  */
-internal sealed class RetryAbleError(override val statusCode: Int? = null) : EventUploadError {
+internal sealed class RetryAbleEventUploadError(override val statusCode: Int? = null) : EventUploadError {
 
     /**
      * `ErrorRetry` represents a retry able error with a specific HTTP status code.
      * @property statusCode The HTTP status code associated with the error, if available.
      */
-    internal data class ErrorRetry(override val statusCode: Int? = null) : RetryAbleError(statusCode)
+    internal data class ErrorRetry(override val statusCode: Int? = null) : RetryAbleEventUploadError(statusCode)
 
     /**
      * `ErrorNetworkUnavailable` represents a retry able error that occurs when the network is unavailable.
      */
-    internal data object ErrorNetworkUnavailable : RetryAbleError(null)
+    internal data object ErrorNetworkUnavailable : RetryAbleEventUploadError(null)
 
     /**
      * `ErrorUnknown` represents an unknown but retry able error.
      */
-    internal data object ErrorUnknown : RetryAbleError(null)
+    internal data object ErrorUnknown : RetryAbleEventUploadError(null)
 }
 
 /**
- * `NonRetryAbleError` is an enum class representing the different types of non-retry able event upload errors.
+ * `NonRetryAbleEventUploadError` is an enum class representing the different types of non-retry able event upload errors.
  *  @property ERROR_400 An error indicating that the request was invalid (e.g., missing or malformed body).
  *  @property ERROR_401 An error indicating that the request was unauthorized.
  *  @property ERROR_404 An error indicating that the resource was not found (e.g., the source is disabled).
  *  @property ERROR_413 An error indicating that the payload size exceeds the maximum allowed limit.
  */
-internal enum class NonRetryAbleError(override val statusCode: Int) : EventUploadError {
+internal enum class NonRetryAbleEventUploadError(override val statusCode: Int) : EventUploadError {
 
     ERROR_400(statusCode = HTTP_400),
     ERROR_401(statusCode = HTTP_401),
@@ -76,13 +76,13 @@ internal fun NetworkResult.toEventUploadResult(): EventUploadResult {
 
         is Result.Failure -> {
             when (val error = this.error) {
-                is NetworkErrorStatus.ErrorRetry -> RetryAbleError.ErrorRetry(error.statusCode)
-                NetworkErrorStatus.ErrorNetworkUnavailable -> RetryAbleError.ErrorNetworkUnavailable
-                NetworkErrorStatus.ErrorUnknown -> RetryAbleError.ErrorUnknown
-                NetworkErrorStatus.Error400 -> NonRetryAbleError.ERROR_400
-                NetworkErrorStatus.Error401 -> NonRetryAbleError.ERROR_401
-                NetworkErrorStatus.Error404 -> NonRetryAbleError.ERROR_404
-                NetworkErrorStatus.Error413 -> NonRetryAbleError.ERROR_413
+                is NetworkErrorStatus.ErrorRetry -> RetryAbleEventUploadError.ErrorRetry(error.statusCode)
+                NetworkErrorStatus.ErrorNetworkUnavailable -> RetryAbleEventUploadError.ErrorNetworkUnavailable
+                NetworkErrorStatus.ErrorUnknown -> RetryAbleEventUploadError.ErrorUnknown
+                NetworkErrorStatus.Error400 -> NonRetryAbleEventUploadError.ERROR_400
+                NetworkErrorStatus.Error401 -> NonRetryAbleEventUploadError.ERROR_401
+                NetworkErrorStatus.Error404 -> NonRetryAbleEventUploadError.ERROR_404
+                NetworkErrorStatus.Error413 -> NonRetryAbleEventUploadError.ERROR_413
             }
         }
     }
