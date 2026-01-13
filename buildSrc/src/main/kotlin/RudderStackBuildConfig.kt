@@ -18,8 +18,8 @@ object RudderStackBuildConfig {
     object AndroidAndCoreSDKs {
 
         const val PACKAGE_NAME = "com.rudderstack.sdk.kotlin"
-        const val VERSION_NAME = "1.1.1"
-        const val VERSION_CODE = "5"
+        const val VERSION_NAME = "1.1.2"
+        const val VERSION_CODE = "6"
 
         object AndroidLibraryInfo : LibraryInfo {
 
@@ -51,8 +51,8 @@ object RudderStackBuildConfig {
         object Adjust : IntegrationModuleInfo {
 
             override val moduleName: String = "adjust"
-            override val versionName: String = "1.0.0"
-            override val versionCode: String = "1"
+            override val versionName: String = "1.1.0"
+            override val versionCode: String = "2"
 
             override val artifactId = "adjust"
             override val pomPackaging = "aar"
@@ -61,8 +61,8 @@ object RudderStackBuildConfig {
         object AppsFlyer : IntegrationModuleInfo {
 
             override val moduleName: String = "appsflyer"
-            override val versionName: String = "1.0.0"
-            override val versionCode: String = "1"
+            override val versionName: String = "1.1.0"
+            override val versionCode: String = "2"
 
             override val artifactId = "appsflyer"
             override val pomPackaging = "aar"
@@ -71,8 +71,8 @@ object RudderStackBuildConfig {
         object Braze : IntegrationModuleInfo {
 
             override val moduleName: String = "braze"
-            override val versionName: String = "1.1.0"
-            override val versionCode: String = "2"
+            override val versionName: String = "1.2.0"
+            override val versionCode: String = "3"
 
             override val artifactId = "braze"
             override val pomPackaging = "aar"
@@ -81,8 +81,8 @@ object RudderStackBuildConfig {
         object Facebook : IntegrationModuleInfo {
 
             override val moduleName: String = "facebook"
-            override val versionName: String = "1.0.1"
-            override val versionCode: String = "2"
+            override val versionName: String = "1.1.0"
+            override val versionCode: String = "3"
 
             override val artifactId = "facebook"
             override val pomPackaging = "aar"
@@ -91,8 +91,8 @@ object RudderStackBuildConfig {
         object Firebase : IntegrationModuleInfo {
 
             override val moduleName: String = "firebase"
-            override val versionName: String = "1.1.0"
-            override val versionCode: String = "3"
+            override val versionName: String = "1.2.0"
+            override val versionCode: String = "4"
 
             override val artifactId = "firebase"
             override val pomPackaging = "aar"
