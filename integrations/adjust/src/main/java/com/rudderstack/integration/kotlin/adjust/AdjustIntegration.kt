@@ -4,16 +4,17 @@ import android.app.Activity
 import android.app.Application
 import androidx.annotation.VisibleForTesting
 import com.adjust.sdk.Adjust
+import com.adjust.sdk.AdjustAttribution
 import com.adjust.sdk.AdjustConfig
 import com.adjust.sdk.AdjustEvent
 import com.adjust.sdk.AdjustInstance
 import com.adjust.sdk.LogLevel
-import com.rudderstack.sdk.kotlin.android.Analytics
 import com.rudderstack.sdk.kotlin.android.plugins.devicemode.IntegrationPlugin
 import com.rudderstack.sdk.kotlin.android.plugins.devicemode.StandardIntegration
 import com.rudderstack.sdk.kotlin.android.plugins.lifecyclemanagment.ActivityLifecycleObserver
 import com.rudderstack.sdk.kotlin.android.utils.addLifecycleObserver
 import com.rudderstack.sdk.kotlin.android.utils.application
+import com.rudderstack.sdk.kotlin.core.Analytics
 import com.rudderstack.sdk.kotlin.core.internals.logger.Logger
 import com.rudderstack.sdk.kotlin.core.internals.logger.LoggerAnalytics
 import com.rudderstack.sdk.kotlin.core.internals.models.Event
@@ -21,12 +22,27 @@ import com.rudderstack.sdk.kotlin.core.internals.models.IdentifyEvent
 import com.rudderstack.sdk.kotlin.core.internals.models.TrackEvent
 import com.rudderstack.sdk.kotlin.core.internals.utils.InternalRudderApi
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import com.rudderstack.integration.kotlin.adjust.AdjustConfig as AdjustDestinationConfig
+import com.rudderstack.sdk.kotlin.android.Analytics as AndroidAnalytics
 
 private const val ANONYMOUS_ID = "anonymousId"
 
 private const val USER_ID = "userId"
 private const val ADJUST_KEY = "Adjust"
+
+// Install Attribution constants
+private const val PROVIDER = "provider"
+private const val TRACKER_TOKEN = "trackerToken"
+private const val TRACKER_NAME = "trackerName"
+private const val CAMPAIGN = "campaign"
+private const val SOURCE = "source"
+private const val NAME = "name"
+private const val CONTENT = "content"
+private const val AD_CREATIVE = "adCreative"
+private const val AD_GROUP = "adGroup"
+private const val INSTALL_ATTRIBUTED_EVENT = "Install Attributed"
 
 /**
  * AdjustIntegration is a plugin that sends events to the Adjust SDK.
@@ -40,17 +56,21 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     private var adjustInstance: AdjustInstance? = null
 
     private lateinit var eventToTokenMappings: List<EventToTokenMapping>
+    private var enableInstallAttributionTracking: Boolean = false
 
     public override fun create(destinationConfig: JsonObject) {
         adjustInstance ?: run {
             destinationConfig.parseConfig<AdjustDestinationConfig>()?.let { config ->
                 eventToTokenMappings = config.eventToTokenMappings
+                enableInstallAttributionTracking = config.enableInstallAttributionTracking
                 adjustInstance = initAdjust(
                     application = analytics.application,
                     appToken = config.appToken,
                     logLevel = LoggerAnalytics.logLevel,
+                    enableInstallAttributionTracking = enableInstallAttributionTracking,
+                    analytics = analytics
                 )
-                (analytics as? Analytics)?.addLifecycleObserver(this)
+                (analytics as? AndroidAnalytics)?.addLifecycleObserver(this)
                 LoggerAnalytics.verbose("AdjustIntegration: Adjust SDK initialized.")
             }
         }
@@ -63,6 +83,7 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     override fun update(destinationConfig: JsonObject) {
         destinationConfig.parseConfig<AdjustDestinationConfig>()?.let { updatedConfig ->
             this.eventToTokenMappings = updatedConfig.eventToTokenMappings
+            this.enableInstallAttributionTracking = updatedConfig.enableInstallAttributionTracking
         }
     }
 
@@ -123,12 +144,18 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     }
 }
 
-private fun initAdjust(application: Application, appToken: String, logLevel: Logger.LogLevel): AdjustInstance {
+private fun initAdjust(
+    application: Application,
+    appToken: String,
+    logLevel: Logger.LogLevel,
+    enableInstallAttributionTracking: Boolean,
+    analytics: Analytics
+): AdjustInstance {
     val adjustEnvironment = getAdjustEnvironment(logLevel)
     val adjustConfig = initAdjustConfig(application, appToken, adjustEnvironment)
         .apply {
             setLogLevel(logLevel)
-            setAllListeners()
+            setAllListeners(enableInstallAttributionTracking, analytics)
             enableSendingInBackground()
         }
     Adjust.initSdk(adjustConfig)
@@ -158,10 +185,14 @@ private fun AdjustConfig.setLogLevel(logLevel: Logger.LogLevel) {
     }
 }
 
-private fun AdjustConfig.setAllListeners() {
+private fun AdjustConfig.setAllListeners(enableInstallAttributionTracking: Boolean, analytics: Analytics) {
     setOnAttributionChangedListener { attribution ->
         LoggerAnalytics.debug("Adjust: Attribution callback called!")
         LoggerAnalytics.debug("Adjust: Attribution: $attribution")
+
+        if (enableInstallAttributionTracking) {
+            sendInstallAttributedEvent(analytics, attribution)
+        }
     }
     setOnEventTrackingSucceededListener { adjustEventSuccess ->
         LoggerAnalytics.debug("Adjust: Event success callback called!")
@@ -188,3 +219,32 @@ private fun AdjustConfig.setAllListeners() {
 
 @VisibleForTesting
 internal fun initAdjustEvent(eventToken: String) = AdjustEvent(eventToken)
+
+/**
+ * Sends an "Install Attributed" event to RudderStack when attribution data is received from Adjust.
+ */
+private fun sendInstallAttributedEvent(analytics: Analytics, attribution: AdjustAttribution) {
+    val properties = buildJsonObject {
+        put(PROVIDER, ADJUST_KEY)
+
+        // Add attribution properties with null checks
+        putIfNotNull(TRACKER_TOKEN, attribution.trackerToken)
+        putIfNotNull(TRACKER_NAME, attribution.trackerName)
+
+        // Create campaign object with attribution data
+        val campaign = buildJsonObject {
+            putIfNotNull(SOURCE, attribution.network)
+            putIfNotNull(NAME, attribution.campaign)
+            putIfNotNull(CONTENT, attribution.clickLabel)
+            putIfNotNull(AD_CREATIVE, attribution.creative)
+            putIfNotNull(AD_GROUP, attribution.adgroup)
+        }
+
+        if (campaign.isNotEmpty()) {
+            put(CAMPAIGN, campaign)
+        }
+    }
+
+    analytics.track(INSTALL_ATTRIBUTED_EVENT, properties)
+    LoggerAnalytics.info("AdjustIntegration: Install Attributed event sent successfully with properties: $properties")
+}
