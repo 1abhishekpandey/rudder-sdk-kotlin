@@ -19,6 +19,7 @@ import java.io.File
 private const val RUDDER_PREFS = "rl_prefs"
 private const val DIRECTORY_NAME = "rudder-android-store"
 
+@Suppress("Detekt.TooManyFunctions")
 internal class AndroidStorage(
     private val context: Context,
     private val writeKey: String,
@@ -104,6 +105,10 @@ internal class AndroidStorage(
 
     override fun readFileList(): List<String> {
         return eventBatchFile.read()
+    }
+
+    override fun readBatchContent(batchRef: String): String? {
+        return eventBatchFile.readContent(batchRef)
     }
 
     override fun getLibraryVersion(): LibraryVersion {
