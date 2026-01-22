@@ -83,7 +83,6 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     override fun update(destinationConfig: JsonObject) {
         destinationConfig.parseConfig<AdjustDestinationConfig>()?.let { updatedConfig ->
             this.eventToTokenMappings = updatedConfig.eventToTokenMappings
-            this.enableInstallAttributionTracking = updatedConfig.enableInstallAttributionTracking
         }
     }
 
