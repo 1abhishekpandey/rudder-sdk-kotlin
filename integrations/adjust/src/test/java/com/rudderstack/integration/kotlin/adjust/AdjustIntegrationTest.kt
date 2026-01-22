@@ -461,6 +461,70 @@ class AdjustIntegrationTest {
             )
         }
     }
+
+    @Test
+    fun `given install attribution tracking is enabled, when attribution callback is triggered multiple times, then multiple install attributed events are sent`() {
+        val configWithAttribution = buildJsonObject {
+            put("appToken", APP_TOKEN)
+            put("enableInstallAttributionTracking", true)
+            put("customMappings", buildJsonArray { })
+        }
+        adjustIntegration.create(configWithAttribution)
+        
+        // Get the attribution listener that was set
+        val attributionSlot = slot<OnAttributionChangedListener>()
+        verify { mockAdjustConfig.setOnAttributionChangedListener(capture(attributionSlot)) }
+        
+        // Create different attribution instances for multiple callbacks
+        val firstAttribution = createAdjustAttribution(
+            trackerName = "first_tracker",
+            trackerToken = "token123",
+            network = "Google Ads"
+        )
+        
+        val secondAttribution = createAdjustAttribution(
+            trackerName = "second_tracker", 
+            trackerToken = "token456",
+            network = "Facebook Ads"
+        )
+        
+        // Trigger the attribution callback multiple times
+        attributionSlot.captured.onAttributionChanged(firstAttribution)
+        attributionSlot.captured.onAttributionChanged(secondAttribution)
+        attributionSlot.captured.onAttributionChanged(firstAttribution) // Same attribution again
+        
+        // Verify that analytics.track was called exactly 3 times (once for each callback)
+        // Since there's no deduplication logic, each callback triggers a new event
+        verify(exactly = 3) {
+            mockAnalytics.track("Install Attributed", any())
+        }
+        
+        // Verify the first event contains first attribution data
+        verify {
+            mockAnalytics.track(
+                "Install Attributed",
+                match { jsonObject ->
+                    val jsonString = jsonObject.toString()
+                    jsonString.contains("\"trackerName\":\"first_tracker\"") &&
+                    jsonString.contains("\"trackerToken\":\"token123\"") &&
+                    jsonString.contains("\"source\":\"Google Ads\"")
+                }
+            )
+        }
+        
+        // Verify the second event contains second attribution data
+        verify {
+            mockAnalytics.track(
+                "Install Attributed",
+                match { jsonObject ->
+                    val jsonString = jsonObject.toString()
+                    jsonString.contains("\"trackerName\":\"second_tracker\"") &&
+                    jsonString.contains("\"trackerToken\":\"token456\"") &&
+                    jsonString.contains("\"source\":\"Facebook Ads\"")
+                }
+            )
+        }
+    }
 }
 
 private fun Any.readFileAsJsonObject(fileName: String): JsonObject {
