@@ -187,6 +187,10 @@ internal fun List<EventToTokenMapping>.getTokenOrNull(event: String): String? =
 
 /**
  * Puts a key-value pair into the [JsonObjectBuilder] if the value is not null or empty.
+ *
+ * @param key The key under which the value will be stored.
+ * @param value The value to store if it is not null or empty.
+ * @return The inserted [JsonElement] if the value is not null or empty, otherwise null.
  */
 internal fun JsonObjectBuilder.putIfNotNull(key: String, value: CharSequence?): JsonElement? = if (!value.isNullOrEmpty()) {
     put(key, value.toString())
