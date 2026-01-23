@@ -194,11 +194,16 @@ internal data class CampaignDto(
     val adCreative: String? = null,
     val adGroup: String? = null
 ) {
+
     /**
      * Checks if this campaign has any meaningful data (at least one non-null field).
      */
     val hasData: Boolean
-        get() = source != null || name != null || content != null || adCreative != null || adGroup != null
+        get() = !source.isNullOrBlank() ||
+            !name.isNullOrBlank() ||
+            !content.isNullOrBlank() ||
+            !adCreative.isNullOrBlank() ||
+            !adGroup.isNullOrBlank()
 }
 
 /**
