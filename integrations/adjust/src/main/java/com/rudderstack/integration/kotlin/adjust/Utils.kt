@@ -9,9 +9,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.double
@@ -20,7 +18,6 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.longOrNull
-import kotlinx.serialization.json.put
 
 private const val ERROR_NULL_VALUE = "Value cannot be null"
 private const val ERROR_UNSUPPORTED_JSON_ELEMENT = "Unsupported JsonElement type"
@@ -185,19 +182,6 @@ internal object PropertiesConstants {
  */
 internal fun List<EventToTokenMapping>.getTokenOrNull(event: String): String? =
     this.find { it.event == event }?.token?.takeUnless { it.isBlank() }
-
-/**
- * Puts a key-value pair into the [JsonObjectBuilder] if the value is not null or empty.
- *
- * @param key The key under which the value will be stored.
- * @param value The value to store if it is not null or empty.
- * @return The inserted [JsonElement] if the value is not null or empty, otherwise null.
- */
-internal fun JsonObjectBuilder.putIfNotNull(key: String, value: CharSequence?): JsonElement? = if (!value.isNullOrEmpty()) {
-    put(key, value.toString())
-} else {
-    null
-}
 
 /**
  * Data transfer object for campaign attribution data.
