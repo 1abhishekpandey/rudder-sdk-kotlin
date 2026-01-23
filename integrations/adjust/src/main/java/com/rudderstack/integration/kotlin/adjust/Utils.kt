@@ -5,6 +5,7 @@ import com.rudderstack.sdk.kotlin.core.internals.models.AnalyticsContext
 import com.rudderstack.sdk.kotlin.core.internals.models.emptyJsonObject
 import com.rudderstack.sdk.kotlin.core.internals.utils.InternalRudderApi
 import com.rudderstack.sdk.kotlin.core.internals.utils.LenientJson
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -196,4 +197,42 @@ internal fun JsonObjectBuilder.putIfNotNull(key: String, value: CharSequence?): 
     put(key, value.toString())
 } else {
     null
+}
+
+/**
+ * Data transfer object for campaign attribution data.
+ */
+@Serializable
+internal data class CampaignDto(
+    val source: String? = null,
+    val name: String? = null,
+    val content: String? = null,
+    val adCreative: String? = null,
+    val adGroup: String? = null
+) {
+    /**
+     * Checks if this campaign has any meaningful data (at least one non-null field).
+     */
+    val hasData: Boolean
+        get() = source != null || name != null || content != null || adCreative != null || adGroup != null
+}
+
+/**
+ * Data transfer object for install attribution event properties.
+ */
+@Serializable
+internal data class InstallAttributionDto(
+    val provider: String,
+    val trackerToken: String? = null,
+    val trackerName: String? = null,
+    val campaign: CampaignDto? = null
+)
+
+/**
+ * Converts the [InstallAttributionDto] to a [JsonObject] using the lenient JSON serializer.
+ */
+@OptIn(InternalRudderApi::class)
+internal fun InstallAttributionDto.toJsonObject(): JsonObject {
+    val jsonString = LenientJson.encodeToString(this)
+    return LenientJson.decodeFromString(jsonString)
 }

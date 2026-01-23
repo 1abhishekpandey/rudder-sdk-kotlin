@@ -22,8 +22,6 @@ import com.rudderstack.sdk.kotlin.core.internals.models.IdentifyEvent
 import com.rudderstack.sdk.kotlin.core.internals.models.TrackEvent
 import com.rudderstack.sdk.kotlin.core.internals.utils.InternalRudderApi
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import com.rudderstack.integration.kotlin.adjust.AdjustConfig as AdjustDestinationConfig
 import com.rudderstack.sdk.kotlin.android.Analytics as AndroidAnalytics
 
@@ -31,17 +29,6 @@ private const val ANONYMOUS_ID = "anonymousId"
 
 private const val USER_ID = "userId"
 private const val ADJUST_KEY = "Adjust"
-
-// Install Attribution constants
-private const val PROVIDER = "provider"
-private const val TRACKER_TOKEN = "trackerToken"
-private const val TRACKER_NAME = "trackerName"
-private const val CAMPAIGN = "campaign"
-private const val SOURCE = "source"
-private const val NAME = "name"
-private const val CONTENT = "content"
-private const val AD_CREATIVE = "adCreative"
-private const val AD_GROUP = "adGroup"
 private const val INSTALL_ATTRIBUTED_EVENT = "Install Attributed"
 
 /**
@@ -223,27 +210,23 @@ internal fun initAdjustEvent(eventToken: String) = AdjustEvent(eventToken)
  * Sends an "Install Attributed" event to RudderStack when attribution data is received from Adjust.
  */
 private fun sendInstallAttributedEvent(analytics: Analytics, attribution: AdjustAttribution) {
-    val properties = buildJsonObject {
-        put(PROVIDER, ADJUST_KEY)
+    val campaignDto = CampaignDto(
+        source = attribution.network,
+        name = attribution.campaign,
+        content = attribution.clickLabel,
+        adCreative = attribution.creative,
+        adGroup = attribution.adgroup
+    )
 
-        // Add attribution properties with null checks
-        putIfNotNull(TRACKER_TOKEN, attribution.trackerToken)
-        putIfNotNull(TRACKER_NAME, attribution.trackerName)
+    val installAttributionDto = InstallAttributionDto(
+        provider = ADJUST_KEY,
+        trackerToken = attribution.trackerToken,
+        trackerName = attribution.trackerName,
+        campaign = if (campaignDto.hasData) campaignDto else null
+    )
 
-        // Create campaign object with attribution data
-        val campaign = buildJsonObject {
-            putIfNotNull(SOURCE, attribution.network)
-            putIfNotNull(NAME, attribution.campaign)
-            putIfNotNull(CONTENT, attribution.clickLabel)
-            putIfNotNull(AD_CREATIVE, attribution.creative)
-            putIfNotNull(AD_GROUP, attribution.adgroup)
-        }
-
-        if (campaign.isNotEmpty()) {
-            put(CAMPAIGN, campaign)
-        }
-    }
-
-    analytics.track(INSTALL_ATTRIBUTED_EVENT, properties)
-    LoggerAnalytics.info("AdjustIntegration: Install Attributed event sent successfully with properties: $properties")
+    analytics.track(INSTALL_ATTRIBUTED_EVENT, installAttributionDto.toJsonObject())
+    LoggerAnalytics.info(
+        "AdjustIntegration: Install Attributed event sent successfully with properties: $installAttributionDto"
+    )
 }
