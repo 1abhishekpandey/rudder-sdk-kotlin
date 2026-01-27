@@ -162,7 +162,7 @@ private fun initAdjust(
     application: Application,
     appToken: String,
     logLevel: Logger.LogLevel,
-    attributionCallback: ((AdjustAttribution) -> Unit)?
+    attributionCallback: ((AdjustAttribution) -> Unit)
 ): AdjustInstance {
     val adjustEnvironment = getAdjustEnvironment(logLevel)
     val adjustConfig = initAdjustConfig(application, appToken, adjustEnvironment)
@@ -198,12 +198,12 @@ private fun AdjustConfig.setLogLevel(logLevel: Logger.LogLevel) {
     }
 }
 
-private fun AdjustConfig.setAllListeners(attributionCallback: ((AdjustAttribution) -> Unit)?) {
+private fun AdjustConfig.setAllListeners(attributionCallback: ((AdjustAttribution) -> Unit)) {
     setOnAttributionChangedListener { attribution ->
         LoggerAnalytics.debug("Adjust: Attribution callback called!")
         LoggerAnalytics.debug("Adjust: Attribution: $attribution")
 
-        attributionCallback?.invoke(attribution)
+        attributionCallback.invoke(attribution)
     }
     setOnEventTrackingSucceededListener { adjustEventSuccess ->
         LoggerAnalytics.debug("Adjust: Event success callback called!")
