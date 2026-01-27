@@ -525,6 +525,90 @@ class AdjustIntegrationTest {
             )
         }
     }
+
+    @Test
+    fun `given integration is created with enableInstallAttributionTracking true, when update is called with enableInstallAttributionTracking false, then attribution callback does not send event`() {
+        // Initial config with attribution tracking enabled
+        val initialConfig = buildJsonObject {
+            put("appToken", APP_TOKEN)
+            put("enableInstallAttributionTracking", true)
+            put("customMappings", buildJsonArray { })
+        }
+        adjustIntegration.create(initialConfig)
+        
+        // Update config to disable attribution tracking
+        val updatedConfig = buildJsonObject {
+            put("appToken", APP_TOKEN)
+            put("enableInstallAttributionTracking", false)
+            put("customMappings", buildJsonArray { })
+        }
+        adjustIntegration.update(updatedConfig)
+        
+        val testAttribution = createAdjustAttribution(
+            trackerName = "testTrackerName",
+            trackerToken = "testTrackerToken",
+            network = "TestNetwork"
+        )
+        
+        // Get the attribution listener that was set during create()
+        val attributionSlot = slot<OnAttributionChangedListener>()
+        verify { mockAdjustConfig.setOnAttributionChangedListener(capture(attributionSlot)) }
+        
+        // Trigger the attribution callback after update
+        attributionSlot.captured.onAttributionChanged(testAttribution)
+        
+        // Verify that analytics.track was NOT called because tracking was disabled via update
+        verify(exactly = 0) {
+            mockAnalytics.track("Install Attributed", any())
+        }
+    }
+
+    @Test
+    fun `given integration is created with enableInstallAttributionTracking false, when update is called with enableInstallAttributionTracking true, then attribution callback sends event`() {
+        // Initial config with attribution tracking disabled
+        val initialConfig = buildJsonObject {
+            put("appToken", APP_TOKEN)
+            put("enableInstallAttributionTracking", false)
+            put("customMappings", buildJsonArray { })
+        }
+        adjustIntegration.create(initialConfig)
+        
+        // Update config to enable attribution tracking
+        val updatedConfig = buildJsonObject {
+            put("appToken", APP_TOKEN)
+            put("enableInstallAttributionTracking", true)
+            put("customMappings", buildJsonArray { })
+        }
+        adjustIntegration.update(updatedConfig)
+        
+        val testAttribution = createAdjustAttribution(
+            trackerName = "enabledTrackerName",
+            trackerToken = "enabledTrackerToken",
+            network = "Google Ads",
+            campaign = "test_campaign"
+        )
+        
+        // Get the attribution listener that was set during create()
+        val attributionSlot = slot<OnAttributionChangedListener>()
+        verify { mockAdjustConfig.setOnAttributionChangedListener(capture(attributionSlot)) }
+        
+        // Trigger the attribution callback after update
+        attributionSlot.captured.onAttributionChanged(testAttribution)
+        
+        // Verify that analytics.track WAS called because tracking was enabled via update
+        verify(exactly = 1) {
+            mockAnalytics.track(
+                "Install Attributed",
+                match { jsonObject ->
+                    val jsonString = jsonObject.toString()
+                    jsonString.contains("\"provider\":\"Adjust\"") &&
+                    jsonString.contains("\"trackerName\":\"enabledTrackerName\"") &&
+                    jsonString.contains("\"trackerToken\":\"enabledTrackerToken\"") &&
+                    jsonString.contains("\"source\":\"Google Ads\"")
+                }
+            )
+        }
+    }
 }
 
 private fun Any.readFileAsJsonObject(fileName: String): JsonObject {
