@@ -196,7 +196,7 @@ internal data class CampaignDto(
 ) {
 
     /**
-     * Checks if this campaign has any meaningful data (at least one non-null field).
+     * Checks if this campaign has any meaningful data (at least one non-null & non-empty field).
      */
     val hasData: Boolean
         get() = !source.isNullOrBlank() ||

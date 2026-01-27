@@ -53,7 +53,7 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
                     application = analytics.application,
                     appToken = config.appToken,
                     logLevel = LoggerAnalytics.logLevel,
-                    attributionCallback = if (enableInstallAttributionTracking) ::sendInstallAttributedEvent else null
+                    attributionCallback = ::sendInstallAttributedEvent
                 )
                 (analytics as? AndroidAnalytics)?.addLifecycleObserver(this)
                 LoggerAnalytics.verbose("AdjustIntegration: Adjust SDK initialized.")
@@ -68,6 +68,7 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     override fun update(destinationConfig: JsonObject) {
         destinationConfig.parseConfig<AdjustDestinationConfig>()?.let { updatedConfig ->
             this.eventToTokenMappings = updatedConfig.eventToTokenMappings
+            this.enableInstallAttributionTracking = updatedConfig.enableInstallAttributionTracking
         }
     }
 
@@ -131,25 +132,29 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
      * Sends an "Install Attributed" event to RudderStack when attribution data is received from Adjust.
      */
     private fun sendInstallAttributedEvent(attribution: AdjustAttribution) {
-        val campaignDto = CampaignDto(
-            source = attribution.network,
-            name = attribution.campaign,
-            content = attribution.clickLabel,
-            adCreative = attribution.creative,
-            adGroup = attribution.adgroup
-        )
+        if (enableInstallAttributionTracking) {
+            val campaignDto = CampaignDto(
+                source = attribution.network,
+                name = attribution.campaign,
+                content = attribution.clickLabel,
+                adCreative = attribution.creative,
+                adGroup = attribution.adgroup
+            )
 
-        val installAttributionDto = InstallAttributionDto(
-            provider = ADJUST_KEY,
-            trackerToken = attribution.trackerToken,
-            trackerName = attribution.trackerName,
-            campaign = if (campaignDto.hasData) campaignDto else null
-        )
+            val installAttributionDto = InstallAttributionDto(
+                provider = ADJUST_KEY,
+                trackerToken = attribution.trackerToken,
+                trackerName = attribution.trackerName,
+                campaign = if (campaignDto.hasData) campaignDto else null
+            )
 
-        analytics.track(INSTALL_ATTRIBUTED_EVENT, installAttributionDto.toJsonObject())
-        LoggerAnalytics.info(
-            "AdjustIntegration: Install Attributed event sent successfully with properties: $installAttributionDto"
-        )
+            analytics.track(INSTALL_ATTRIBUTED_EVENT, installAttributionDto.toJsonObject())
+            LoggerAnalytics.info(
+                "AdjustIntegration: Install Attributed event sent successfully with properties: $installAttributionDto"
+            )
+        } else {
+            LoggerAnalytics.debug("AdjustIntegration: Install attribution tracking is disabled.")
+        }
     }
 }
 
