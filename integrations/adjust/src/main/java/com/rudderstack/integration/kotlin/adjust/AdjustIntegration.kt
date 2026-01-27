@@ -42,6 +42,8 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     private var adjustInstance: AdjustInstance? = null
 
     private lateinit var eventToTokenMappings: List<EventToTokenMapping>
+
+    @Volatile
     private var enableInstallAttributionTracking: Boolean = false
 
     public override fun create(destinationConfig: JsonObject) {
