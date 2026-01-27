@@ -609,6 +609,35 @@ class AdjustIntegrationTest {
             )
         }
     }
+
+    @Test
+    fun `given enableInstallAttributionTracking is not provided in configuration, when attribution callback is triggered, then no install attributed event is sent due to default false value`() {
+        // Create config without enableInstallAttributionTracking field to test default behavior
+        val configWithoutAttributionField = buildJsonObject {
+            put("appToken", APP_TOKEN)
+            put("customMappings", buildJsonArray { })
+            // Note: enableInstallAttributionTracking is intentionally omitted to test default value (false)
+        }
+        adjustIntegration.create(configWithoutAttributionField)
+        
+        val testAttribution = createAdjustAttribution(
+            trackerName = "testTrackerName",
+            trackerToken = "testTrackerToken",
+            network = "Test Network"
+        )
+        
+        // Get the attribution listener that was set
+        val attributionSlot = slot<OnAttributionChangedListener>()
+        verify { mockAdjustConfig.setOnAttributionChangedListener(capture(attributionSlot)) }
+        
+        // Trigger the attribution callback
+        attributionSlot.captured.onAttributionChanged(testAttribution)
+        
+        // Verify that analytics.track was NOT called because enableInstallAttributionTracking defaults to false
+        verify(exactly = 0) {
+            mockAnalytics.track("Install Attributed", any())
+        }
+    }
 }
 
 private fun Any.readFileAsJsonObject(fileName: String): JsonObject {

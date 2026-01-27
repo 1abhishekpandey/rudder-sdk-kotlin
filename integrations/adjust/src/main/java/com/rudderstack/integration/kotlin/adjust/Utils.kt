@@ -14,6 +14,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.long
@@ -222,6 +223,5 @@ internal data class InstallAttributionDto(
  */
 @OptIn(InternalRudderApi::class)
 internal fun InstallAttributionDto.toJsonObject(): JsonObject {
-    val jsonString = LenientJson.encodeToString(this)
-    return LenientJson.decodeFromString(jsonString)
+    return LenientJson.encodeToJsonElement(this) as JsonObject
 }
