@@ -4,11 +4,11 @@ import android.app.Activity
 import android.app.Application
 import androidx.annotation.VisibleForTesting
 import com.adjust.sdk.Adjust
+import com.adjust.sdk.AdjustAttribution
 import com.adjust.sdk.AdjustConfig
 import com.adjust.sdk.AdjustEvent
 import com.adjust.sdk.AdjustInstance
 import com.adjust.sdk.LogLevel
-import com.rudderstack.sdk.kotlin.android.Analytics
 import com.rudderstack.sdk.kotlin.android.plugins.devicemode.IntegrationPlugin
 import com.rudderstack.sdk.kotlin.android.plugins.devicemode.StandardIntegration
 import com.rudderstack.sdk.kotlin.android.plugins.lifecyclemanagment.ActivityLifecycleObserver
@@ -22,11 +22,13 @@ import com.rudderstack.sdk.kotlin.core.internals.models.TrackEvent
 import com.rudderstack.sdk.kotlin.core.internals.utils.InternalRudderApi
 import kotlinx.serialization.json.JsonObject
 import com.rudderstack.integration.kotlin.adjust.AdjustConfig as AdjustDestinationConfig
+import com.rudderstack.sdk.kotlin.android.Analytics as AndroidAnalytics
 
 private const val ANONYMOUS_ID = "anonymousId"
 
 private const val USER_ID = "userId"
 private const val ADJUST_KEY = "Adjust"
+private const val INSTALL_ATTRIBUTED_EVENT = "Install Attributed"
 
 /**
  * AdjustIntegration is a plugin that sends events to the Adjust SDK.
@@ -41,16 +43,21 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
 
     private lateinit var eventToTokenMappings: List<EventToTokenMapping>
 
+    @Volatile
+    private var enableInstallAttributionTracking: Boolean = false
+
     public override fun create(destinationConfig: JsonObject) {
         adjustInstance ?: run {
             destinationConfig.parseConfig<AdjustDestinationConfig>()?.let { config ->
                 eventToTokenMappings = config.eventToTokenMappings
+                enableInstallAttributionTracking = config.enableInstallAttributionTracking
                 adjustInstance = initAdjust(
                     application = analytics.application,
                     appToken = config.appToken,
                     logLevel = LoggerAnalytics.logLevel,
+                    attributionCallback = ::sendInstallAttributedEvent
                 )
-                (analytics as? Analytics)?.addLifecycleObserver(this)
+                (analytics as? AndroidAnalytics)?.addLifecycleObserver(this)
                 LoggerAnalytics.verbose("AdjustIntegration: Adjust SDK initialized.")
             }
         }
@@ -63,6 +70,7 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     override fun update(destinationConfig: JsonObject) {
         destinationConfig.parseConfig<AdjustDestinationConfig>()?.let { updatedConfig ->
             this.eventToTokenMappings = updatedConfig.eventToTokenMappings
+            this.enableInstallAttributionTracking = updatedConfig.enableInstallAttributionTracking
         }
     }
 
@@ -121,14 +129,48 @@ class AdjustIntegration : StandardIntegration, IntegrationPlugin(), ActivityLife
     override fun onActivityPaused(activity: Activity) {
         Adjust.onPause()
     }
+
+    /**
+     * Sends an "Install Attributed" event to RudderStack when attribution data is received from Adjust.
+     */
+    private fun sendInstallAttributedEvent(attribution: AdjustAttribution) {
+        if (enableInstallAttributionTracking) {
+            val campaignDto = CampaignDto(
+                source = attribution.network,
+                name = attribution.campaign,
+                content = attribution.clickLabel,
+                adCreative = attribution.creative,
+                adGroup = attribution.adgroup
+            )
+
+            val installAttributionDto = InstallAttributionDto(
+                provider = ADJUST_KEY,
+                trackerToken = attribution.trackerToken,
+                trackerName = attribution.trackerName,
+                campaign = if (campaignDto.hasData) campaignDto else null
+            )
+
+            analytics.track(INSTALL_ATTRIBUTED_EVENT, installAttributionDto.toJsonObject())
+            LoggerAnalytics.info(
+                "AdjustIntegration: Install Attributed event sent successfully with properties: $installAttributionDto"
+            )
+        } else {
+            LoggerAnalytics.debug("AdjustIntegration: Install attribution tracking is disabled.")
+        }
+    }
 }
 
-private fun initAdjust(application: Application, appToken: String, logLevel: Logger.LogLevel): AdjustInstance {
+private fun initAdjust(
+    application: Application,
+    appToken: String,
+    logLevel: Logger.LogLevel,
+    attributionCallback: ((AdjustAttribution) -> Unit)
+): AdjustInstance {
     val adjustEnvironment = getAdjustEnvironment(logLevel)
     val adjustConfig = initAdjustConfig(application, appToken, adjustEnvironment)
         .apply {
             setLogLevel(logLevel)
-            setAllListeners()
+            setAllListeners(attributionCallback)
             enableSendingInBackground()
         }
     Adjust.initSdk(adjustConfig)
@@ -158,10 +200,12 @@ private fun AdjustConfig.setLogLevel(logLevel: Logger.LogLevel) {
     }
 }
 
-private fun AdjustConfig.setAllListeners() {
+private fun AdjustConfig.setAllListeners(attributionCallback: ((AdjustAttribution) -> Unit)) {
     setOnAttributionChangedListener { attribution ->
         LoggerAnalytics.debug("Adjust: Attribution callback called!")
         LoggerAnalytics.debug("Adjust: Attribution: $attribution")
+
+        attributionCallback.invoke(attribution)
     }
     setOnEventTrackingSucceededListener { adjustEventSuccess ->
         LoggerAnalytics.debug("Adjust: Event success callback called!")
