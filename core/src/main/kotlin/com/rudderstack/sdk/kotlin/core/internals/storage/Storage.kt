@@ -23,6 +23,7 @@ const val MAX_BATCH_SIZE = 500 * 1024 // 500 KB
  * It also provides methods for removing stored data, performing rollover operations,
  * and retrieving file lists.
  */
+@Suppress("Detekt.TooManyFunctions")
 @InternalRudderApi
 interface Storage {
 
@@ -129,6 +130,14 @@ interface Storage {
     fun readFileList(): List<String>
 
     /**
+     * Reads the content of a batch.
+     *
+     * @param batchRef The reference (path/key) of the batch to read.
+     * @return The batch content as a String, or null if the batch does not exist.
+     */
+    fun readBatchContent(batchRef: String): String?
+
+    /**
      * Retrieves the version information of the library.
      *
      * @return An instance of [LibraryVersion] containing version details.
@@ -153,6 +162,7 @@ interface Storage {
  *
  * @property key
  */
+@InternalRudderApi
 enum class StorageKeys(val key: String) {
 
     /**

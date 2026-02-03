@@ -8,11 +8,13 @@ import kotlinx.serialization.Serializable
  *
  * @param appToken The app token required for the Adjust SDK.
  * @param eventToTokenMappings The list of mappings from event to token.
+ * @param enableInstallAttributionTracking Enable automatic "Install Attributed" track event when attribution data is received.
  */
 @Serializable
 data class AdjustConfig(
     val appToken: String,
     @SerialName("customMappings") val eventToTokenMappings: List<EventToTokenMapping> = emptyList(),
+    val enableInstallAttributionTracking: Boolean = false,
 )
 
 /**
