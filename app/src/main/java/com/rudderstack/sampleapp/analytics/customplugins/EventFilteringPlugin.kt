@@ -12,18 +12,21 @@ import com.rudderstack.sdk.kotlin.core.internals.plugins.Plugin
  * 
  * ## Usage:
  * ```kotlin
- * // Create and add the plugin
+ * // Create and add the plugin with default events
  * val eventFilteringPlugin = EventFilteringPlugin()
+ * analytics.add(eventFilteringPlugin)
+ * 
+ * // Create and add the plugin with custom events
+ * val eventFilteringPlugin = EventFilteringPlugin(listOf("Custom Event", "Another Event"))
  * analytics.add(eventFilteringPlugin)
  * ```
  */
-class EventFilteringPlugin : Plugin {
+class EventFilteringPlugin(
+    private val eventsToFilter: List<String> = listOf("Application Opened", "Application Backgrounded")
+) : Plugin {
 
     override val pluginType: Plugin.PluginType = Plugin.PluginType.OnProcess
     override lateinit var analytics: Analytics
-
-    // List of events to filter out - this can be modified according to the need
-    private val eventsToFilter = mutableListOf("Application Opened", "Application Backgrounded")
 
     override suspend fun intercept(event: Event): Event? {
         if (event is TrackEvent && eventsToFilter.contains(event.event)) {
@@ -31,9 +34,5 @@ class EventFilteringPlugin : Plugin {
             return null
         }
         return event
-    }
-
-    override fun teardown() {
-        eventsToFilter.clear()
     }
 }

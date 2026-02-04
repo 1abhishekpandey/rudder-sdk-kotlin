@@ -87,17 +87,32 @@ class EventFilteringPluginTest {
     }
 
     @Test
-    fun `when teardown is called, then events filter list is cleared`() = runTest {
-        // First verify filtering works
-        val filteredEvent = TrackEvent(event = "Application Opened", properties = emptyJsonObject)
-        val resultBeforeTeardown = eventFilteringPlugin.intercept(filteredEvent)
-        assertNull(resultBeforeTeardown)
+    fun `given custom events list in constructor, when filtered track event intercepted, then event is filtered out`() = runTest {
+        val customFilteringPlugin = EventFilteringPlugin(listOf("Custom Event", "Another Event"))
+        val filteredEvent = TrackEvent(event = "Custom Event", properties = emptyJsonObject)
 
-        // Call teardown
-        eventFilteringPlugin.teardown()
+        val result = customFilteringPlugin.intercept(filteredEvent)
 
-        // After teardown, the same event should pass through
-        val resultAfterTeardown = eventFilteringPlugin.intercept(filteredEvent)
-        assertEquals(filteredEvent, resultAfterTeardown)
+        assertNull(result)
+    }
+
+    @Test
+    fun `given custom events list in constructor, when non-filtered track event intercepted, then event passes through`() = runTest {
+        val customFilteringPlugin = EventFilteringPlugin(listOf("Custom Event", "Another Event"))
+        val nonFilteredEvent = TrackEvent(event = "Application Opened", properties = emptyJsonObject) // Default filter won't apply
+
+        val result = customFilteringPlugin.intercept(nonFilteredEvent)
+
+        assertEquals(nonFilteredEvent, result)
+    }
+
+    @Test
+    fun `given empty events list in constructor, when any track event intercepted, then all events pass through`() = runTest {
+        val noFilteringPlugin = EventFilteringPlugin(emptyList())
+        val trackEvent = TrackEvent(event = "Application Opened", properties = emptyJsonObject)
+
+        val result = noFilteringPlugin.intercept(trackEvent)
+
+        assertEquals(trackEvent, result)
     }
 }
