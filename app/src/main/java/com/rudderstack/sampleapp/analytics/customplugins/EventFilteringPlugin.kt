@@ -25,11 +25,6 @@ class EventFilteringPlugin : Plugin {
     // List of events to filter out - this can be modified according to the need
     private val eventsToFilter = mutableListOf("Application Opened", "Application Backgrounded")
 
-    override fun setup(analytics: Analytics) {
-        super.setup(analytics)
-        this.analytics = analytics
-    }
-
     override suspend fun intercept(event: Event): Event? {
         if (event is TrackEvent && eventsToFilter.contains(event.event)) {
             LoggerAnalytics.verbose("EventFilteringPlugin: Event \"${event.event}\" is filtered out.")
