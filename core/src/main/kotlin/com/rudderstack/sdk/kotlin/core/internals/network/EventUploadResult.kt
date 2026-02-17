@@ -2,6 +2,11 @@ package com.rudderstack.sdk.kotlin.core.internals.network
 
 import com.rudderstack.sdk.kotlin.core.internals.utils.Result
 
+private const val RETRY_REASON_SERVER_PREFIX = "server-"
+private const val RETRY_REASON_CLIENT_NETWORK = "client-network"
+private const val RETRY_REASON_CLIENT_TIMEOUT = "client-timeout"
+private const val RETRY_REASON_CLIENT_UNKNOWN = "client-unknown"
+
 /**
  * `EventUploadResult` is a sealed interface representing the result of an event upload attempt.
  * It can either be a success or an error.
@@ -44,6 +49,11 @@ internal sealed class RetryAbleEventUploadError(override val statusCode: Int? = 
     internal data object ErrorNetworkUnavailable : RetryAbleEventUploadError(null)
 
     /**
+     * `ErrorTimeout` represents a retry able error that occurs when a request times out.
+     */
+    internal data object ErrorTimeout : RetryAbleEventUploadError(null)
+
+    /**
      * `ErrorUnknown` represents an unknown but retry able error.
      */
     internal data object ErrorUnknown : RetryAbleEventUploadError(null)
@@ -78,6 +88,7 @@ internal fun NetworkResult.toEventUploadResult(): EventUploadResult {
             when (val error = this.error) {
                 is NetworkErrorStatus.ErrorRetry -> RetryAbleEventUploadError.ErrorRetry(error.statusCode)
                 NetworkErrorStatus.ErrorNetworkUnavailable -> RetryAbleEventUploadError.ErrorNetworkUnavailable
+                NetworkErrorStatus.ErrorTimeout -> RetryAbleEventUploadError.ErrorTimeout
                 NetworkErrorStatus.ErrorUnknown -> RetryAbleEventUploadError.ErrorUnknown
                 NetworkErrorStatus.Error400 -> NonRetryAbleEventUploadError.ERROR_400
                 NetworkErrorStatus.Error401 -> NonRetryAbleEventUploadError.ERROR_401
@@ -95,4 +106,18 @@ internal fun NetworkResult.toEventUploadResult(): EventUploadResult {
 internal fun EventUploadError.formatStatusCodeMessage(): String {
     val statusCode = this.statusCode ?: "Not available"
     return "Status code: $statusCode"
+}
+
+/**
+ * Converts this retryable error to its corresponding retry reason string for the `Rsa-Retry-Reason` header.
+ *
+ * @return Retry reason string in the format expected by the backend
+ */
+internal fun RetryAbleEventUploadError.toRetryReason(): String = when (this) {
+    // Null statusCode means no HTTP response was received, indicating a client-side network failure
+    is RetryAbleEventUploadError.ErrorRetry -> statusCode?.let { "$RETRY_REASON_SERVER_PREFIX$it" }
+        ?: RETRY_REASON_CLIENT_NETWORK
+    is RetryAbleEventUploadError.ErrorTimeout -> RETRY_REASON_CLIENT_TIMEOUT
+    is RetryAbleEventUploadError.ErrorNetworkUnavailable -> RETRY_REASON_CLIENT_NETWORK
+    is RetryAbleEventUploadError.ErrorUnknown -> RETRY_REASON_CLIENT_UNKNOWN
 }
