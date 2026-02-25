@@ -35,7 +35,7 @@ jobs:
 
       - name: Assemble debug builds
         run: |
-          ./gradlew \
+          ./gradlew --parallel \
             :core:assemble \
             :android:assembleDebug \
             :integrations:adjust:assembleDebug \
@@ -68,7 +68,7 @@ jobs:
 
       - name: Assemble release builds
         run: |
-          ./gradlew \
+          ./gradlew --parallel \
             :core:assemble \
             :android:assembleRelease \
             :integrations:adjust:assembleRelease \
