@@ -33,7 +33,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble debug builds
-        run: ./gradlew --parallel :integrations:adjust:assembleDebug
+        run: |
+          ./gradlew --parallel \
+            :core:assemble \
+            :android:assembleDebug \
+            :integrations:adjust:assembleDebug \
+            :integrations:appsflyer:assembleDebug \
+            :integrations:firebase:assembleDebug \
+            :integrations:facebook:assembleDebug \
+            :integrations:braze:assembleDebug
 
   build-release-parallel:
     name: Build Release (Parallel)
@@ -57,7 +65,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble release builds
-        run: ./gradlew --parallel :integrations:adjust:assembleRelease
+        run: |
+          ./gradlew --parallel \
+            :core:assemble \
+            :android:assembleRelease \
+            :integrations:adjust:assembleRelease \
+            :integrations:appsflyer:assembleRelease \
+            :integrations:firebase:assembleRelease \
+            :integrations:facebook:assembleRelease \
+            :integrations:braze:assembleRelease
 
   build-debug-no-parallel:
     name: Build Debug (No Parallel)
@@ -81,7 +97,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble debug builds
-        run: ./gradlew :integrations:adjust:assembleDebug
+        run: |
+          ./gradlew \
+            :core:assemble \
+            :android:assembleDebug \
+            :integrations:adjust:assembleDebug \
+            :integrations:appsflyer:assembleDebug \
+            :integrations:firebase:assembleDebug \
+            :integrations:facebook:assembleDebug \
+            :integrations:braze:assembleDebug
 
   build-release-no-parallel:
     name: Build Release (No Parallel)
@@ -105,7 +129,15 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble release builds
-        run: ./gradlew :integrations:adjust:assembleRelease
+        run: |
+          ./gradlew \
+            :core:assemble \
+            :android:assembleRelease \
+            :integrations:adjust:assembleRelease \
+            :integrations:appsflyer:assembleRelease \
+            :integrations:firebase:assembleRelease \
+            :integrations:facebook:assembleRelease \
+            :integrations:braze:assembleRelease
 
   assemble-debug-parallel:
     name: Assemble Debug (Parallel)
@@ -129,7 +161,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble debug
-        run: ./gradlew --parallel :integrations:adjust:assembleDebug
+        run: ./gradlew --parallel assembleDebug
 
   assemble-debug-no-parallel:
     name: Assemble Debug (No Parallel)
@@ -153,7 +185,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble debug
-        run: ./gradlew :integrations:adjust:assembleDebug
+        run: ./gradlew assembleDebug
 
   assemble-release-parallel:
     name: Assemble Release (Parallel)
@@ -177,7 +209,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble release
-        run: ./gradlew --parallel :integrations:adjust:assembleRelease
+        run: ./gradlew --parallel assembleRelease
 
   assemble-release-no-parallel:
     name: Assemble Release (No Parallel)
@@ -201,4 +233,4 @@ jobs:
         run: chmod +x gradlew
 
       - name: Assemble release
-        run: ./gradlew :integrations:adjust:assembleRelease
+        run: ./gradlew assembleRelease
